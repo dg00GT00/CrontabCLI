@@ -29,6 +29,14 @@ group.add_argument("--update", "-u",
                     specified interval in minutes and
                     the path to python script """)
 
+group.add_argument("--insert",
+                   action=MediatorFuncs,
+                   nargs=2,
+                   metavar=("int", "str"),
+                   help=""" Inserts a new entry at crontab file with the 
+                    specified interval in minutes and
+                    the path to python script """)
+
 parser.add_argument("--py",
                     action=MediatorFuncs,
                     type=str,
