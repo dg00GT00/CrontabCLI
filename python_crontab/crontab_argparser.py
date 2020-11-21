@@ -12,7 +12,7 @@ class BindValues(Action):
 
     def __init__(self, option_strings: Sequence[Text], dest: Text, **kwargs):
         super().__init__(option_strings, dest, **kwargs)
-        self.manage_crontab = ManagePythonCrontabScript()
+        self.cron_manager = ManagePythonCrontabScript()
 
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any,
                  option_string=None) -> None:
@@ -27,12 +27,13 @@ class CallExecFuncs(BindValues):
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Tuple[str, str],
                  option_string=None) -> None:
         BindValues.__call__(self, parser, namespace, values, option_string)
-        self.manage_crontab.set_interval_script(*values)
-        self.manage_crontab.event.wait()
+        self.cron_manager.event.wait()
         if getattr(namespace, "init") is not None:
-            self.manage_crontab.init_crontab()
+            self.cron_manager.init_crontab(*values)
         elif getattr(namespace, "update") is not None:
-            self.manage_crontab.update_crontab()
+            self.cron_manager.update_crontab(*values)
+        elif getattr(namespace, "insert") is not None:
+            self.cron_manager.insert_new_crontab(*values)
         print("Done!")
 
 
@@ -44,8 +45,8 @@ class CallInitFuncs(BindValues):
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: str,
                  option_string=None) -> None:
         BindValues.__call__(self, parser, namespace, values, option_string)
-        self.manage_crontab.set_py_interpreter(values)
-        self.manage_crontab.event.set()
+        self.cron_manager.pycron_builder.set_py_interpreter(values)
+        self.cron_manager.event.set()
 
 
 class MediatorFuncs(CallInitFuncs, CallExecFuncs):

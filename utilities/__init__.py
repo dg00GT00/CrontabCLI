@@ -6,6 +6,10 @@ from exceptions import MinOutOfRangeException
 from python_crontab.icrontab_entry import ICrontabEntry
 from utilities.bash_run import run_bash_cmd
 
+"""
+Collection of utilities functions and classes which does not have necessarily relation to each other  
+"""
+
 
 def check_args_integrity(func: Callable[..., Any]) -> Union[Callable[..., Any], NoReturn]:
     """
