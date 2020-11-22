@@ -29,6 +29,9 @@ class CrontabScriptManager:
         while True:
             line = self._cron_io.readline()
             if line:
+                if new_cron_script in line:
+                    self.was_entry_modified = True
+                    break
                 cron_io.write(line)
             else:
                 break

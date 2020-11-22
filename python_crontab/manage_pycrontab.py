@@ -56,6 +56,8 @@ class ManagePythonCrontabScript:
                 print("Inserting a new crontab entry...")
                 new_script = c.insert_new_crontab()
                 generate_new_crontab(new_script)
+                if c.was_entry_modified:
+                    print("This cron entry already exists. Cron file not touched!")
             else:
                 print(f"No entry found. Initializing the a crontab entry for {USER} user...")
                 self.init_crontab(interval, script)
