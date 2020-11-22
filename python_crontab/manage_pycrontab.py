@@ -1,6 +1,7 @@
 import threading
 
 from env import USER
+from exceptions import NoCronEntryFound
 from python_crontab.build_py_crontab import BuildPythonCrontabScript
 from utilities import singleton, check_pkg_existence, generate_new_crontab
 from utilities.crontab_script_manager import CrontabScriptManager
@@ -19,8 +20,7 @@ class ManagePythonCrontabScript:
         self.pycron_builder = BuildPythonCrontabScript()
 
     def _update_py_specs(self, interval: str, script: str) -> None:
-        self.pycron_builder.interval = interval
-        self.pycron_builder.script = script
+        self.pycron_builder.set_interval_script(interval, script)
 
     def init_crontab(self, interval: str, script: str) -> None:
         """
@@ -59,3 +59,15 @@ class ManagePythonCrontabScript:
             else:
                 print(f"No entry found. Initializing the a crontab entry for {USER} user...")
                 self.init_crontab(interval, script)
+
+    def remove_crontab_entry(self, interval: str, script: str) -> None:
+        self._update_py_specs(interval, script)
+        with CrontabScriptManager(self.pycron_builder) as c:
+            if c.some_entry_exists:
+                print("Removing the crontab entry...")
+                new_script = c.remove_crontab_entry()
+                generate_new_crontab(new_script)
+                if not c.is_entry_deleted:
+                    print("No entry found to be deleted with provided parameters. Cron file not touched!")
+            else:
+                raise NoCronEntryFound

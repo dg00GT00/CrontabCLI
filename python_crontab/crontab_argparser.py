@@ -34,6 +34,8 @@ class CallExecFuncs(BindValues):
             self.cron_manager.update_crontab(*values)
         elif getattr(namespace, "insert") is not None:
             self.cron_manager.insert_new_crontab(*values)
+        elif getattr(namespace, "delete") is not None:
+            self.cron_manager.remove_crontab_entry(*values)
         print("Done!")
 
 

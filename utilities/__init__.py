@@ -1,4 +1,5 @@
 import os
+import re
 from functools import wraps
 from typing import Callable, Any, Union, NoReturn, Type
 
@@ -84,3 +85,9 @@ def singleton(_class: Type[ICrontabEntry]) -> Callable[..., ICrontabEntry]:
         return instance
 
     return inner_sing
+
+
+def pycron_regex(keep_part: str, py_script: str) -> str:
+    esc_py_script = re.escape(py_script)
+    esc_keep_part = re.escape(keep_part)
+    return fr"(?<=\*/)\d+(?=(?:\s\*)+\s+{esc_keep_part}\d*\.*\d*\s*{esc_py_script})"
