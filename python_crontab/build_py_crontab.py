@@ -4,7 +4,7 @@ from utilities import check_args_integrity, check_pyscript_existence
 
 class BuildPythonCrontabScript(ICrontabEntry):
     """
-    builds the formatted python script entry to insertion on cron by
+    Builds the formatted python script entry to insertion on cron by
     crontab command
     """
 

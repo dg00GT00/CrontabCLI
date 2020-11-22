@@ -87,7 +87,7 @@ def singleton(_class: Type[ICrontabEntry]) -> Callable[..., ICrontabEntry]:
     return inner_sing
 
 
-def pycron_regex(keep_part: str, py_script: str) -> str:
-    esc_py_script = re.escape(py_script)
+def regex_builder(keep_part: str, script: str) -> str:
+    esc_script = re.escape(script)
     esc_keep_part = re.escape(keep_part)
-    return fr"(?<=\*/)\d+(?=(?:\s\*)+\s+{esc_keep_part}\d*\.*\d*\s*{esc_py_script})"
+    return fr"(?<=\*/)\d+(?=(?:\s\*)+\s+{esc_keep_part}\d*\.*\d*\s*{esc_script})"

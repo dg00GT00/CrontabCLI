@@ -3,7 +3,7 @@ import re
 from typing import TypeVar
 
 from python_crontab.icrontab_entry import ICrontabEntry
-from utilities import run_bash_cmd, pycron_regex
+from utilities import run_bash_cmd, regex_builder
 
 Self = TypeVar("Self", bound="CrontabScriptManager")
 
@@ -60,7 +60,7 @@ class CrontabScriptManager:
 
     def update_crontab(self, keep_part: str) -> str:
         cron_script = self._cron_io.read().strip()
-        new_script = re.sub(pycron_regex(keep_part, self.crontab_gen.script),
+        new_script = re.sub(regex_builder(keep_part, self.crontab_gen.script),
                             self.crontab_gen.interval,
                             cron_script, count=1)
         self.clear_crontab_entries()
