@@ -1,10 +1,9 @@
 import os
-import re
+from argparse import Namespace
 from functools import wraps
 from typing import Callable, Any, Union, NoReturn, Type
 
-from exceptions import MinOutOfRangeException
-from python_crontab.icrontab_entry import ICrontabEntry
+from python_crontab.icron_entry import ICronEntry
 from utilities.bash_run import run_bash_cmd
 
 """
@@ -23,11 +22,11 @@ def check_args_integrity(func: Callable[..., Any]) -> Union[Callable[..., Any], 
     def inner_check(interval: str, py_script: str) -> NoReturn:
         check_pyscript_existence(py_script)
         if int(interval) < 0 or int(interval) > 59:
-            raise MinOutOfRangeException
+            print("The minutes field must be encompassed from 0 up to 59")
 
     @wraps(func)
     def main_func(*args):
-        if isinstance(args[0], ICrontabEntry):
+        if isinstance(args[0], ICronEntry):
             inner_check(*args[1:])
         else:
             inner_check(*args)
@@ -69,7 +68,7 @@ def check_pkg_existence() -> None:
         os.system("sudo apt install postfix")
 
 
-def singleton(_class: Type[ICrontabEntry]) -> Callable[..., ICrontabEntry]:
+def singleton(_class: Type[ICronEntry]) -> Callable[..., ICronEntry]:
     """
     Decorator that grants a class singleton
     :param _class: the class to hold the singleton
@@ -87,7 +86,12 @@ def singleton(_class: Type[ICrontabEntry]) -> Callable[..., ICrontabEntry]:
     return inner_sing
 
 
-def regex_builder(keep_part: str, script: str) -> str:
-    esc_script = re.escape(script)
-    esc_keep_part = re.escape(keep_part)
-    return fr"(?<=\*/)\d+(?=(?:\s\*)+\s+{esc_keep_part}\d*\.*\d*\s*{esc_script})"
+def check_attr(namespace: Namespace, attr: str) -> bool:
+    """
+    Checks if a namespace has an attribute and if its value is different from None
+    :param namespace: the namespace to check through
+    :param attr: the attribute name which will be check for
+    """
+    if hasattr(namespace, attr) and getattr(namespace, attr) is None:
+        return True
+    return False

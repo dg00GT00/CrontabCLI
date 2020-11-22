@@ -1,7 +1,7 @@
 import abc
 
 
-class ICrontabEntry(abc.ABC):
+class ICronEntry(abc.ABC):
     """
     Interface for setting a python script entry through crontab command
     """

@@ -1,15 +1,15 @@
-from python_crontab.icrontab_entry import ICrontabEntry
+from python_crontab.icron_entry import ICronEntry
 from utilities import check_args_integrity, check_pyscript_existence
 
 
-class BuildPythonCrontabScript(ICrontabEntry):
+class BuildPythonCronScript(ICronEntry):
     """
     Builds the formatted python script entry to insertion on cron by
     crontab command
     """
 
     def __init__(self):
-        super(BuildPythonCrontabScript, self).__init__()
+        super(BuildPythonCronScript, self).__init__()
         self.py_interpreter = ""
 
     def set_py_interpreter(self, py_interpreter: str) -> None:
