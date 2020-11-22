@@ -67,7 +67,7 @@ class ManagePythonCrontabScript:
                 print("Removing the crontab entry...")
                 new_script = c.remove_crontab_entry()
                 generate_new_crontab(new_script)
-                if not c.is_entry_deleted:
+                if not c.was_entry_modified:
                     print("No entry found to be deleted with provided parameters. Cron file not touched!")
             else:
                 raise NoCronEntryFound

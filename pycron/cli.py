@@ -4,6 +4,7 @@ import argparse
 from python_crontab.crontab_argparser import MediatorFuncs
 
 parser = argparse.ArgumentParser(
+    prog="pycron.cli.py",
     description="""
     Sets the location of the JobFinders project 
     entry point and specifies the interval time

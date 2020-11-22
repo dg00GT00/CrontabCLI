@@ -15,7 +15,7 @@ class CrontabScriptManager:
 
     def __init__(self, crontab_gen: ICrontabEntry):
         self.crontab_gen = crontab_gen
-        self.is_entry_deleted = False
+        self.was_entry_modified = False
         self._base_crontab_command = run_bash_cmd(["crontab", "-l"], show_output=True)
         self._cron_io: io.TextIOWrapper = self._base_crontab_command.result
         self.some_entry_exists: bool = True if self._base_crontab_command.return_code == 0 else False
@@ -40,12 +40,13 @@ class CrontabScriptManager:
 
     def remove_crontab_entry(self) -> str:
         cron_io = io.StringIO()
+        cron_script = self.crontab_gen.build_cron_script()
         while True:
             line = self._cron_io.readline()
             if line:
-                if self.crontab_gen.build_cron_script() in line:
+                if cron_script in line:
                     line = ""
-                    self.is_entry_deleted = True
+                    self.was_entry_modified = True
                 cron_io.write(line)
             else:
                 break
