@@ -1,7 +1,7 @@
 import threading
 from typing import List, Tuple
 
-from env import USER
+from environment import USER
 from python_crontab.build_py_cron import BuildPythonCronScript
 from utilities import singleton, check_pkg_existence, generate_new_crontab
 from utilities.cron_script_manager import CronScriptManager
