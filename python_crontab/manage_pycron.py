@@ -1,10 +1,31 @@
 import threading
-from typing import List, Tuple
+from functools import wraps
+from typing import List, Tuple, Type, Callable
 
 from environment import USER
+from exceptions import MinOutOfRangeException
 from python_crontab.build_py_cron import BuildPythonCronScript
-from utilities import singleton, check_pkg_existence, generate_new_crontab
+from python_crontab.icron_entry import ICronEntry
+from utilities import check_pkg_existence, generate_new_crontab
 from utilities.cron_script_manager import CronScriptManager
+
+
+def _singleton(_class: Type[ICronEntry]) -> Callable[..., ICronEntry]:
+    """
+    Decorator that grants a class singleton
+    :param _class: the class to hold the singleton
+    :return: always the same class instance
+    """
+    instance = None
+
+    @wraps(_class)
+    def inner_sing():
+        nonlocal instance
+        if instance is None:
+            instance = _class()
+        return instance
+
+    return inner_sing
 
 
 class UpdatePycronValues:
@@ -26,7 +47,7 @@ class UpdatePycronValues:
         self.ready_to_update = True if len(self.old_pycron_values) != 0 else False
 
 
-@singleton
+@_singleton
 class ManagePythonCronScript(UpdatePycronValues):
     """
     Manages the insertion and updating of the python script into cron
@@ -45,7 +66,14 @@ class ManagePythonCronScript(UpdatePycronValues):
         :param interval: the interval to update
         :param script: the python script to update
         """
-        self.pycron_builder.set_interval_script(interval, script)
+        try:
+            self.pycron_builder.interval = interval
+        except MinOutOfRangeException as e:
+            print(e)
+        try:
+            self.pycron_builder.script = script
+        except FileNotFoundError as e:
+            print(e)
 
     def _pycron_update_builder(self) -> Tuple[str, str]:
         """

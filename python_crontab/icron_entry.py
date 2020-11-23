@@ -1,4 +1,7 @@
 import abc
+from typing import NoReturn
+
+from utilities import time_constraints, check_source_existence
 
 
 class ICronEntry(abc.ABC):
@@ -15,7 +18,8 @@ class ICronEntry(abc.ABC):
         return self._interval
 
     @interval.setter
-    def interval(self, value: str):
+    def interval(self, value: str) -> NoReturn:
+        time_constraints(value)
         self._interval = value
 
     @property
@@ -23,13 +27,9 @@ class ICronEntry(abc.ABC):
         return self._script
 
     @script.setter
-    def script(self, value: str):
+    def script(self, value: str) -> NoReturn:
+        check_source_existence(value)
         self._script = value
-
-    @abc.abstractmethod
-    def set_interval_script(self, interval: str, script: str) -> None:
-        """Sets the interval and the python script path"""
-        raise NotImplementedError
 
     @abc.abstractmethod
     def build_cron_script(self) -> str:
