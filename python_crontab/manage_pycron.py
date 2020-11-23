@@ -66,14 +66,8 @@ class ManagePythonCronScript(UpdatePycronValues):
         :param interval: the interval to update
         :param script: the python script to update
         """
-        try:
-            self.pycron_builder.interval = interval
-        except MinOutOfRangeException as e:
-            print(e)
-        try:
-            self.pycron_builder.script = script
-        except FileNotFoundError as e:
-            print(e)
+        self.pycron_builder.interval = interval
+        self.pycron_builder.script = script
 
     def _pycron_update_builder(self) -> Tuple[str, str]:
         """
@@ -87,55 +81,67 @@ class ManagePythonCronScript(UpdatePycronValues):
         return old_pycron, new_pycron
 
     def init_cron(self, interval: str, script: str) -> None:
-        self._update_py_specs(interval, script)
-        with CronScriptManager(self.pycron_builder) as c:
-            if not c.some_entry_exists:
-                print(f"Generating a new cron for {USER} user...")
-                generate_new_crontab(c.crontab_gen.build_cron_script())
-                self.successfully_command = True
-            else:
-                print(f"{USER} user already has a cron entry. Call the 'update' command to alter existent entries ")
+        try:
+            self._update_py_specs(interval, script)
+            with CronScriptManager(self.pycron_builder) as c:
+                if not c.some_entry_exists:
+                    print(f"Generating a new cron for {USER} user...")
+                    generate_new_crontab(c.crontab_gen.build_cron_script())
+                    self.successfully_command = True
+                else:
+                    print(f"{USER} user already has a cron entry. Call the 'update' command to alter existent entries ")
+        except (MinOutOfRangeException, FileNotFoundError):
+            pass
 
     def update_cron(self) -> None:
-        if self.ready_to_update:
+        try:
+            if self.ready_to_update:
+                with CronScriptManager(self.pycron_builder) as c:
+                    if c.some_entry_exists:
+                        print("Updating the cron entry...")
+                        old_pycron, new_pycron = self._pycron_update_builder()
+                        new_script = c.update_cron(old_pycron, new_pycron)
+                        generate_new_crontab(new_script)
+                        if not c.was_entry_modified:
+                            print("No correspondent cron entry found to be updated")
+                            return
+                        self.successfully_command = True
+                    else:
+                        print("No cron entry found. Initialized a cron entry with '--init' or '--insert' flags on cli")
+        except (MinOutOfRangeException, FileNotFoundError):
+            pass
+
+    def insert_new_cron(self, interval: str, script: str) -> None:
+        try:
+            self._update_py_specs(interval, script)
             with CronScriptManager(self.pycron_builder) as c:
                 if c.some_entry_exists:
-                    print("Updating the cron entry...")
-                    old_pycron, new_pycron = self._pycron_update_builder()
-                    new_script = c.update_cron(old_pycron, new_pycron)
+                    print("Inserting a new cron entry...")
+                    new_script = c.insert_new_cron()
                     generate_new_crontab(new_script)
-                    if not c.was_entry_modified:
-                        print("No correspondent cron entry found to be updated")
+                    if c.was_entry_modified:
+                        print("This cron entry already exists")
                         return
                     self.successfully_command = True
                 else:
-                    print("No cron entry found. Initialized a cron entry with '--init' or '--insert' flags on cli")
-
-    def insert_new_cron(self, interval: str, script: str) -> None:
-        self._update_py_specs(interval, script)
-        with CronScriptManager(self.pycron_builder) as c:
-            if c.some_entry_exists:
-                print("Inserting a new cron entry...")
-                new_script = c.insert_new_cron()
-                generate_new_crontab(new_script)
-                if c.was_entry_modified:
-                    print("This cron entry already exists")
-                    return
-                self.successfully_command = True
-            else:
-                print(f"No entry found. Initializing the a cron entry for {USER} user...")
-                self.init_cron(interval, script)
+                    print(f"No entry found. Initializing the a cron entry for {USER} user...")
+                    self.init_cron(interval, script)
+        except (MinOutOfRangeException, FileNotFoundError):
+            pass
 
     def remove_cron_entry(self, interval: str, script: str) -> None:
-        self._update_py_specs(interval, script)
-        with CronScriptManager(self.pycron_builder) as c:
-            if c.some_entry_exists:
-                print("Removing the cron entry...")
-                new_script = c.remove_cron_entry()
-                generate_new_crontab(new_script)
-                if not c.was_entry_modified:
-                    print("No entry found to be deleted with provided parameters")
-                    return
-                self.successfully_command = True
-            else:
-                print("The cron file is empty. Nothing to be deleted")
+        try:
+            self._update_py_specs(interval, script)
+            with CronScriptManager(self.pycron_builder) as c:
+                if c.some_entry_exists:
+                    print("Removing the cron entry...")
+                    new_script = c.remove_cron_entry()
+                    generate_new_crontab(new_script)
+                    if not c.was_entry_modified:
+                        print("No entry found to be deleted with provided parameters")
+                        return
+                    self.successfully_command = True
+                else:
+                    print("The cron file is empty. Nothing to be deleted")
+        except (MinOutOfRangeException, FileNotFoundError):
+            pass
