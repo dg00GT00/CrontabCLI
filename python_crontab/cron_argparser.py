@@ -3,6 +3,7 @@ from argparse import Action, ArgumentParser, Namespace
 from typing import Any, Sequence, Text, Tuple
 
 from python_crontab.manage_pycron import ManagePythonCronScript
+from python_crontab.pycron_enum import PyCron, SubPyCron
 from utilities import check_attr
 
 
@@ -33,11 +34,11 @@ class CallMainParserFuncs(BindValues):
                  option_string=None) -> None:
         BindValues.__call__(self, parser, namespace, values, option_string)
         self.cron_manager.event.wait()
-        if getattr(namespace, "init") is not None:
+        if getattr(namespace, str(PyCron.INIT)) is not None:
             self.cron_manager.init_cron(*values)
-        elif getattr(namespace, "insert") is not None:
+        elif getattr(namespace, str(PyCron.INSERT)) is not None:
             self.cron_manager.insert_new_cron(*values)
-        elif getattr(namespace, "delete") is not None:
+        elif getattr(namespace, str(PyCron.DELETE)) is not None:
             self.cron_manager.remove_cron_entry(*values)
         self.end_message()
 
@@ -59,9 +60,9 @@ class CallSubParserFuncs(BindValues):
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any, option_string=None) -> None:
         super().__call__(parser, namespace, values, option_string)
         self.cron_manager.event.wait()
-        if self.dest == "new":
+        if self.dest == str(SubPyCron.NEW):
             self.cron_manager.set_new_values(getattr(namespace, "new"))
-        elif self.dest == "old":
+        elif self.dest == str(SubPyCron.OLD):
             self.cron_manager.set_old_values(getattr(namespace, "old"))
         self.cron_manager.update_cron()
         self.end_message()
@@ -74,7 +75,7 @@ class MainMediatorFuncs(CallInitFuncs, CallMainParserFuncs):
 
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any,
                  option_string=None) -> None:
-        if check_attr(namespace, "py"):
+        if check_attr(namespace, str(PyCron.PY)):
             threading.Thread(target=CallInitFuncs.__call__,
                              args=(self, parser, namespace, values, option_string)).start()
         else:
@@ -89,10 +90,10 @@ class SubMediatorFuncs(CallInitFuncs, CallSubParserFuncs):
 
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any,
                  option_string=None) -> None:
-        if check_attr(namespace, "py"):
+        if check_attr(namespace, str(PyCron.PY)):
             threading.Thread(target=CallInitFuncs.__call__,
                              args=(self, parser, namespace, values, option_string)).start()
         else:
-            if check_attr(namespace, "new") or check_attr(namespace, "old"):
+            if check_attr(namespace, str(SubPyCron.NEW)) or check_attr(namespace, str(SubPyCron.OLD)):
                 threading.Thread(target=CallSubParserFuncs.__call__,
                                  args=(self, parser, namespace, values, option_string)).start()

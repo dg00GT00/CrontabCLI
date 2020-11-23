@@ -2,6 +2,7 @@
 import argparse
 
 from python_crontab.cron_argparser import MainMediatorFuncs, SubMediatorFuncs
+from python_crontab.pycron_enum import SubPyCron, PyCron
 
 parser = argparse.ArgumentParser(
     prog="pycron.cli.py",
@@ -15,14 +16,14 @@ update_parser = parser.add_subparsers(help="Commands for updating an entry on cr
 
 update_args = update_parser.add_parser("update")
 
-update_args.add_argument("--old",
+update_args.add_argument(SubPyCron.OLD.build_args(),
                          action=SubMediatorFuncs,
                          nargs=2,
                          required=True,
                          metavar=("int", "str"),
                          help="The interval in minutes and python script path to update")
 
-update_args.add_argument("--new",
+update_args.add_argument(SubPyCron.NEW.build_args(),
                          action=SubMediatorFuncs,
                          nargs=2,
                          required=True,
@@ -31,7 +32,7 @@ update_args.add_argument("--new",
 
 group = parser.add_mutually_exclusive_group()
 
-group.add_argument("--init", "-i",
+group.add_argument(PyCron.INIT.build_args(),
                    action=MainMediatorFuncs,
                    nargs=2,
                    metavar=("int", "str"),
@@ -39,15 +40,7 @@ group.add_argument("--init", "-i",
                     specified interval in minutes and
                     the path to python script """)
 
-group.add_argument("--update", "-u",
-                   action=MainMediatorFuncs,
-                   nargs=2,
-                   metavar=("int", "str"),
-                   help=""" Update the entry at crontab file with the 
-                    specified interval in minutes and
-                    the path to python script """)
-
-group.add_argument("--insert",
+group.add_argument(PyCron.INSERT.build_args(),
                    action=MainMediatorFuncs,
                    nargs=2,
                    metavar=("int", "str"),
@@ -55,7 +48,7 @@ group.add_argument("--insert",
                     specified interval in minutes and
                     the path to python script """)
 
-group.add_argument("--delete", "-d",
+group.add_argument(PyCron.DELETE.build_args(),
                    action=MainMediatorFuncs,
                    nargs=2,
                    metavar=("int", "str"),
@@ -63,7 +56,7 @@ group.add_argument("--delete", "-d",
                     specified interval in minutes and
                     the path to python script """)
 
-parser.add_argument("--py",
+parser.add_argument(PyCron.PY.build_args(),
                     action=MainMediatorFuncs,
                     type=str,
                     required=True,
