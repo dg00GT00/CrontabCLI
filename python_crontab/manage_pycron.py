@@ -28,6 +28,17 @@ def _singleton(_class: Type[ICronEntry]) -> Callable[..., ICronEntry]:
     return inner_sing
 
 
+def _error_wrapper(func: Callable[..., None]) -> Callable[..., None]:
+    @wraps(func)
+    def inner(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except (MinOutOfRangeException, FileNotFoundError) as e:
+            print(e)
+
+    return inner
+
+
 class UpdatePycronValues:
     """
     Holds the old and new pycron came from cron file
@@ -80,68 +91,60 @@ class ManagePythonCronScript(UpdatePycronValues):
         new_pycron = self.pycron_builder.build_cron_script()
         return old_pycron, new_pycron
 
+    @_error_wrapper
     def init_cron(self, interval: str, script: str) -> None:
-        try:
-            self._update_py_specs(interval, script)
-            with CronScriptManager(self.pycron_builder) as c:
-                if not c.some_entry_exists:
-                    print(f"Generating a new cron for {USER} user...")
-                    generate_new_crontab(c.crontab_gen.build_cron_script())
-                    self.successfully_command = True
-                else:
-                    print(f"{USER} user already has a cron entry. Call the 'update' command to alter existent entries ")
-        except (MinOutOfRangeException, FileNotFoundError) as e:
-            print(e)
+        self._update_py_specs(interval, script)
+        with CronScriptManager(self.pycron_builder) as c:
+            if not c.some_entry_exists:
+                print(f"Generating a new cron for {USER} user...")
+                generate_new_crontab(c.crontab_gen.build_cron_script())
+                self.successfully_command = True
+            else:
+                print(f"{USER} user already has a cron entry. Call the 'update' command to alter existent entries ")
 
+    @_error_wrapper
     def update_cron(self) -> None:
-        try:
-            if self.ready_to_update:
-                with CronScriptManager(self.pycron_builder) as c:
-                    if c.some_entry_exists:
-                        print("Updating the cron entry...")
-                        old_pycron, new_pycron = self._pycron_update_builder()
-                        new_script = c.update_cron(old_pycron, new_pycron)
-                        generate_new_crontab(new_script)
-                        if not c.was_entry_modified:
-                            print("No correspondent cron entry found to be updated")
-                            return
-                        self.successfully_command = True
-                    else:
-                        print("No cron entry found. Initialized a cron entry with '--init' or '--insert' flags on cli")
-        except (MinOutOfRangeException, FileNotFoundError) as e:
-            print(e)
-
-    def insert_new_cron(self, interval: str, script: str) -> None:
-        try:
-            self._update_py_specs(interval, script)
+        if self.ready_to_update:
             with CronScriptManager(self.pycron_builder) as c:
                 if c.some_entry_exists:
-                    print("Inserting a new cron entry...")
-                    new_script = c.insert_new_cron()
-                    generate_new_crontab(new_script)
-                    if c.was_entry_modified:
-                        print("This cron entry already exists")
-                        return
-                    self.successfully_command = True
-                else:
-                    print(f"No entry found. Initializing the a cron entry for {USER} user...")
-                    self.init_cron(interval, script)
-        except (MinOutOfRangeException, FileNotFoundError) as e:
-            print(e)
-
-    def remove_cron_entry(self, interval: str, script: str) -> None:
-        try:
-            self._update_py_specs(interval, script)
-            with CronScriptManager(self.pycron_builder) as c:
-                if c.some_entry_exists:
-                    print("Removing the cron entry...")
-                    new_script = c.remove_cron_entry()
+                    print("Updating the cron entry...")
+                    old_pycron, new_pycron = self._pycron_update_builder()
+                    new_script = c.update_cron(old_pycron, new_pycron)
                     generate_new_crontab(new_script)
                     if not c.was_entry_modified:
-                        print("No entry found to be deleted with provided parameters")
+                        print("No correspondent cron entry found to be updated")
                         return
                     self.successfully_command = True
                 else:
-                    print("The cron file is empty. Nothing to be deleted")
-        except (MinOutOfRangeException, FileNotFoundError) as e:
-            print(e)
+                    print("No cron entry found. Initialized a cron entry with '--init' or '--insert' flags on cli")
+
+    @_error_wrapper
+    def insert_new_cron(self, interval: str, script: str) -> None:
+        self._update_py_specs(interval, script)
+        with CronScriptManager(self.pycron_builder) as c:
+            if c.some_entry_exists:
+                print("Inserting a new cron entry...")
+                new_script = c.insert_new_cron()
+                generate_new_crontab(new_script)
+                if c.was_entry_modified:
+                    print("This cron entry already exists")
+                    return
+                self.successfully_command = True
+            else:
+                print(f"No entry found. Initializing the a cron entry for {USER} user...")
+                self.init_cron(interval, script)
+
+    @_error_wrapper
+    def remove_cron_entry(self, interval: str, script: str) -> None:
+        self._update_py_specs(interval, script)
+        with CronScriptManager(self.pycron_builder) as c:
+            if c.some_entry_exists:
+                print("Removing the cron entry...")
+                new_script = c.remove_cron_entry()
+                generate_new_crontab(new_script)
+                if not c.was_entry_modified:
+                    print("No entry found to be deleted with provided parameters")
+                    return
+                self.successfully_command = True
+            else:
+                print("The cron file is empty. Nothing to be deleted")
