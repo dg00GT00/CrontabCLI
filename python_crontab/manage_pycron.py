@@ -90,8 +90,8 @@ class ManagePythonCronScript(UpdatePycronValues):
                     self.successfully_command = True
                 else:
                     print(f"{USER} user already has a cron entry. Call the 'update' command to alter existent entries ")
-        except (MinOutOfRangeException, FileNotFoundError):
-            pass
+        except (MinOutOfRangeException, FileNotFoundError) as e:
+            print(e)
 
     def update_cron(self) -> None:
         try:
@@ -108,8 +108,8 @@ class ManagePythonCronScript(UpdatePycronValues):
                         self.successfully_command = True
                     else:
                         print("No cron entry found. Initialized a cron entry with '--init' or '--insert' flags on cli")
-        except (MinOutOfRangeException, FileNotFoundError):
-            pass
+        except (MinOutOfRangeException, FileNotFoundError) as e:
+            print(e)
 
     def insert_new_cron(self, interval: str, script: str) -> None:
         try:
@@ -126,8 +126,8 @@ class ManagePythonCronScript(UpdatePycronValues):
                 else:
                     print(f"No entry found. Initializing the a cron entry for {USER} user...")
                     self.init_cron(interval, script)
-        except (MinOutOfRangeException, FileNotFoundError):
-            pass
+        except (MinOutOfRangeException, FileNotFoundError) as e:
+            print(e)
 
     def remove_cron_entry(self, interval: str, script: str) -> None:
         try:
@@ -143,5 +143,5 @@ class ManagePythonCronScript(UpdatePycronValues):
                     self.successfully_command = True
                 else:
                     print("The cron file is empty. Nothing to be deleted")
-        except (MinOutOfRangeException, FileNotFoundError):
-            pass
+        except (MinOutOfRangeException, FileNotFoundError) as e:
+            print(e)
