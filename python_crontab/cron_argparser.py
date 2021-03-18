@@ -75,7 +75,7 @@ class MainMediatorFuncs(CallInitFuncs, CallMainParserFuncs):
 
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any,
                  option_string=None) -> None:
-        if check_attr(namespace, str(PyCron.PY)):
+        if check_attr(namespace, str(PyCron.PY)) and isinstance(values, str):
             threading.Thread(target=CallInitFuncs.__call__,
                              args=(self, parser, namespace, values, option_string)).start()
         else:

@@ -100,7 +100,7 @@ class ManagePythonCronScript(UpdatePycronValues):
                 generate_new_crontab(c.crontab_gen.build_cron_script())
                 self.successfully_command = True
             else:
-                print(f"{USER} user already has a cron entry. Call the 'update' command to alter existent entries ")
+                print(f"{USER} user already has a cron entry. Call the 'update' command to alter existent entries")
 
     @_error_wrapper
     def update_cron(self) -> None:
