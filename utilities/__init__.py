@@ -33,8 +33,8 @@ def check_source_existence(path: str) -> NoReturn:
     Checks if the provide path exists
     :param path: the path to check existence for
     """
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"{path} not found")
+    if path is None or not os.path.exists(path):
+        raise FileNotFoundError(f"{path} not found" if path is not None else "")
 
 
 def check_pkg_existence() -> None:
