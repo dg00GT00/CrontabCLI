@@ -1,6 +1,6 @@
 from typing import NoReturn
 
-from python_crontab.icron_entry import IPyCronEntry
+from python_crontab.interfaces.icron_entry import IPyCronEntry
 from utilities import check_source_existence
 
 
