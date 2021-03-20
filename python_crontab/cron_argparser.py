@@ -1,8 +1,9 @@
 import threading
 from argparse import Action, ArgumentParser, Namespace
-from typing import Any, Sequence, Text, Tuple
+from typing import Any, Sequence, Text, Tuple, Optional
 
-from python_crontab.manage_pycron import ManagePythonCronScript
+from python_crontab.build_py_cron import BuildPyCronScript, BuildPyModuleCronScript
+from python_crontab.manage_pycron import ManagePyCronScript, ManagePyModuleCronScript
 from python_crontab.pycron_enum import PyCron, SubPyCron
 from utilities import check_attr
 
@@ -14,11 +15,15 @@ class BindValues(Action):
 
     def __init__(self, option_strings: Sequence[Text], dest: Text, **kwargs):
         super().__init__(option_strings, dest, **kwargs)
-        self.cron_manager = ManagePythonCronScript()
+        self.cron_manager: Optional[ManagePyCronScript] = None
 
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any,
                  option_string=None) -> None:
         setattr(namespace, self.dest, values)
+        if getattr(namespace, str(PyCron.MODULE)):
+            self.cron_manager = ManagePyModuleCronScript(BuildPyModuleCronScript())
+        else:
+            self.cron_manager = ManagePyCronScript(BuildPyCronScript())
 
     def end_message(self):
         if self.cron_manager.successfully_command:
@@ -34,12 +39,15 @@ class CallMainParserFuncs(BindValues):
                  option_string=None) -> None:
         BindValues.__call__(self, parser, namespace, values, option_string)
         self.cron_manager.event.wait()
+        self.cron_manager.interval = values[0]
+        self.cron_manager.set_script(values[1])
+
         if getattr(namespace, str(PyCron.INIT)) is not None:
-            self.cron_manager.init_cron(*values)
+            self.cron_manager.init_cron()
         elif getattr(namespace, str(PyCron.INSERT)) is not None:
-            self.cron_manager.insert_new_cron(*values)
+            self.cron_manager.insert_new_cron()
         elif getattr(namespace, str(PyCron.DELETE)) is not None:
-            self.cron_manager.remove_cron_entry(*values)
+            self.cron_manager.remove_cron_entry()
         self.end_message()
 
 

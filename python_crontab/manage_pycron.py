@@ -1,50 +1,50 @@
 import threading
+from abc import ABC, ABCMeta, abstractmethod
 from functools import wraps
-from typing import List, Tuple, Type, Callable
+from typing import List, Tuple, Type, Callable, Optional, overload, Dict
 
 from environment import USER
 from exceptions import MinOutOfRangeException
-from python_crontab.build_py_cron import BuildPythonCronScript
-from python_crontab.icron_entry import ICronEntry
+from python_crontab.icron_entry import IPyCronEntry
 from utilities import check_pkg_existence, generate_new_crontab
 from utilities.cron_script_manager import CronScriptManager
 
 
-def _singleton(_class: Type[ICronEntry]) -> Callable[..., ICronEntry]:
+def _singleton(_class: Type[IPyCronEntry]) -> Callable[..., IPyCronEntry]:
     """
     Decorator that grants a class singleton
     :param _class: the class to hold the singleton
     :return: always the same class instance
     """
-    instance = None
+    instance_dict: Dict[str, IPyCronEntry] = {}
 
     @wraps(_class)
-    def inner_sing():
-        nonlocal instance
-        if instance is None:
-            instance = _class()
-        return instance
+    def inner_sing(*args, **kwargs):
+        if _class.__name__ not in instance_dict:
+            instance_dict[_class.__name__] = _class(*args, **kwargs)
+        return instance_dict[_class.__name__]
 
     return inner_sing
 
 
 def _error_wrapper(func: Callable[..., None]) -> Callable[..., None]:
     @wraps(func)
-    def inner(*args, **kwargs):
+    def inner_wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)
         except (MinOutOfRangeException, FileNotFoundError) as e:
             print(e)
 
-    return inner
+    return inner_wrapper
 
 
-class UpdatePycronValues:
+class UpdatePyCronValues:
     """
     Holds the old and new pycron came from cron file
     """
 
     def __init__(self):
+        super(UpdatePyCronValues, self).__init__()
         self.old_pycron_values: List[str] = []
         self.new_pycron_values: List[str] = []
         self.ready_to_update = False
@@ -58,18 +58,63 @@ class UpdatePycronValues:
         self.ready_to_update = True if len(self.old_pycron_values) != 0 else False
 
 
-@_singleton
-class ManagePythonCronScript(UpdatePycronValues):
-    """
-    Manages the insertion and updating of the python script into cron
-    """
-
-    def __init__(self):
+class IPyCronManager(ABC, metaclass=ABCMeta):
+    def __init__(self, pycron_builder: IPyCronEntry):
+        """
+        Manages the insertion and updating of the python script into cron
+        """
         check_pkg_existence()
-        UpdatePycronValues.__init__(self)
-        self.event = threading.Event()
+        super(IPyCronManager, self).__init__()
         self.successfully_command = False
-        self.pycron_builder = BuildPythonCronScript()
+        self.pycron_builder = pycron_builder
+        self._script: Optional[str, List[str]] = None
+        self._interval: Optional[str] = None
+        self.event = threading.Event()
+
+    @property
+    def interval(self) -> str:
+        return self._interval
+
+    @interval.setter
+    def interval(self, value: str) -> None:
+        self._interval = value
+
+    @property
+    def script(self) -> str:
+        return self._script
+
+    @overload
+    def set_script(self, script: str) -> None:
+        raise NotImplementedError
+
+    @overload
+    def set_script(self, script: List[str]) -> None:
+        raise NotImplementedError
+
+    def set_script(self, script) -> None:
+        self._script = script
+
+    @abstractmethod
+    def init_cron(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def update_cron(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def insert_new_cron(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def remove_cron_entry(self) -> None:
+        raise NotImplementedError
+
+
+@_singleton
+class ManagePyCronScript(IPyCronManager, UpdatePyCronValues):
+    def __init__(self, pycron_builder: IPyCronEntry):
+        super(ManagePyCronScript, self).__init__(pycron_builder)
 
     def _update_py_specs(self, interval: str, script: str) -> None:
         """
@@ -92,8 +137,8 @@ class ManagePythonCronScript(UpdatePycronValues):
         return old_pycron, new_pycron
 
     @_error_wrapper
-    def init_cron(self, interval: str, script: str) -> None:
-        self._update_py_specs(interval, script)
+    def init_cron(self) -> None:
+        self._update_py_specs(self.interval, self.script)
         with CronScriptManager(self.pycron_builder) as c:
             if not c.some_entry_exists:
                 print(f"Generating a new cron for {USER} user...")
@@ -119,8 +164,8 @@ class ManagePythonCronScript(UpdatePycronValues):
                     print("No cron entry found. Initialized a cron entry with '--init' or '--insert' flags on cli")
 
     @_error_wrapper
-    def insert_new_cron(self, interval: str, script: str) -> None:
-        self._update_py_specs(interval, script)
+    def insert_new_cron(self) -> None:
+        self._update_py_specs(self.interval, self.script)
         with CronScriptManager(self.pycron_builder) as c:
             if c.some_entry_exists:
                 print("Inserting a new cron entry...")
@@ -132,11 +177,11 @@ class ManagePythonCronScript(UpdatePycronValues):
                 self.successfully_command = True
             else:
                 print(f"No entry found. Initializing the a cron entry for {USER} user...")
-                self.init_cron(interval, script)
+                self.init_cron()
 
     @_error_wrapper
-    def remove_cron_entry(self, interval: str, script: str) -> None:
-        self._update_py_specs(interval, script)
+    def remove_cron_entry(self) -> None:
+        self._update_py_specs(self.interval, self.script)
         with CronScriptManager(self.pycron_builder) as c:
             if c.some_entry_exists:
                 print("Removing the cron entry...")
@@ -148,3 +193,10 @@ class ManagePythonCronScript(UpdatePycronValues):
                 self.successfully_command = True
             else:
                 print("The cron file is empty. Nothing to be deleted")
+
+
+@_singleton
+class ManagePyModuleCronScript(ManagePyCronScript.__wrapped__):
+    def set_script(self, script: List[str]) -> None:
+        py_path, py_module = script
+        super().set_script(f"cd {py_path} && {self.pycron_builder.py_interpreter} -m {py_module}")

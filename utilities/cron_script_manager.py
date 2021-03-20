@@ -8,11 +8,11 @@ Self = TypeVar("Self", bound="CronScriptManager")
 
 
 class CronScriptManager:
-    """
-    Manages the "CRUD" operation done in the cron scripts
-    """
-
     def __init__(self, crontab_gen: ICronEntry):
+        """
+        Manages the "CRUD" operation done in the cron scripts
+        @param crontab_gen: concrete implementation of class for setting the python script through crontab script
+        """
         self.crontab_gen = crontab_gen
         self.was_entry_modified = False
         self._new_cron_io = io.StringIO()
@@ -21,20 +21,17 @@ class CronScriptManager:
         self.some_entry_exists: bool = True if self._base_crontab_command.return_code == 0 else False
 
     def _io_wrapper(self, func: Callable[..., str]) -> Callable[..., str]:
-        def inner(*args, **kwargs) -> str:
+        def inner_wrapper(*args, **kwargs) -> str:
             update_crontab_script = func(*args, **kwargs)
             self._new_cron_io.close()
-            self.clear_cron_entries()
+            run_bash_cmd(["crontab", "-r"])
             return update_crontab_script.strip()
 
-        return inner
+        return inner_wrapper
 
     def __getattr__(self, item) -> Callable[..., str]:
         if callable(item):
             return self._io_wrapper(item)
-
-    def clear_cron_entries(self) -> None:
-        run_bash_cmd(["crontab", "-r"])
 
     def insert_new_cron(self) -> str:
         new_cron_script = self.crontab_gen.build_cron_script()

@@ -15,6 +15,7 @@ class PyCron(_EnumMixin, Enum):
     INSERT = "insert"
     UPDATE = "update"
     DELETE = "delete"
+    MODULE = "module"
 
 
 class SubPyCron(_EnumMixin, Enum):

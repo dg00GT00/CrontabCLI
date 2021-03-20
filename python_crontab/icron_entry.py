@@ -1,12 +1,12 @@
-import abc
-from typing import NoReturn
+from abc import abstractmethod, ABC
+from typing import NoReturn, Optional
 
 from utilities import time_constraints, check_source_existence
 
 
-class ICronEntry(abc.ABC):
+class ICronEntry(ABC):
     """
-    Interface for setting a python script entry through crontab command
+    Interface for setting a generic script entry through crontab command
     """
 
     def __init__(self):
@@ -31,7 +31,29 @@ class ICronEntry(abc.ABC):
         check_source_existence(value)
         self._script = value
 
-    @abc.abstractmethod
+    @abstractmethod
     def build_cron_script(self) -> str:
         """Builds the properly formatted crontab script"""
         raise NotImplementedError
+
+
+class IPyCronEntry(ICronEntry):
+    """
+    Interface for setting a python script entry through crontab command
+    """
+
+    def __init__(self):
+        super(IPyCronEntry, self).__init__()
+        self._py_interpreter: Optional[str] = None
+
+    @property
+    def py_interpreter(self) -> str:
+        return self._py_interpreter
+
+    @abstractmethod
+    def set_py_interpreter(self, py_interpreter: str) -> NoReturn:
+        """
+        Sets the python interpreter for building the cron script entry
+        @param py_interpreter: the python interpreter
+        """
+        self._py_interpreter = py_interpreter
