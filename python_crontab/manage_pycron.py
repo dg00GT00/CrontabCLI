@@ -1,30 +1,13 @@
-import threading
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC
 from functools import wraps
-from typing import List, Tuple, Type, Callable, Optional, overload, Dict
+from typing import List, Tuple, Callable
 
 from environment import USER
-from exceptions import MinOutOfRangeException
-from python_crontab.icron_entry import IPyCronEntry
-from utilities import check_pkg_existence, generate_new_crontab
+from exceptions import MinOutOfRangeException, NoPyModuleFound
+from python_crontab.interfaces.icron_entry import IPyCronEntry, IPyCronManager
+from utilities import generate_new_crontab
 from utilities.cron_script_manager import CronScriptManager
-
-
-def _singleton(_class: Type[IPyCronEntry]) -> Callable[..., IPyCronEntry]:
-    """
-    Decorator that grants a class singleton
-    :param _class: the class to hold the singleton
-    :return: always the same class instance
-    """
-    instance_dict: Dict[str, IPyCronEntry] = {}
-
-    @wraps(_class)
-    def inner_sing(*args, **kwargs):
-        if _class.__name__ not in instance_dict:
-            instance_dict[_class.__name__] = _class(*args, **kwargs)
-        return instance_dict[_class.__name__]
-
-    return inner_sing
+from utilities.singleton import Singleton
 
 
 def _error_wrapper(func: Callable[..., None]) -> Callable[..., None]:
@@ -32,10 +15,20 @@ def _error_wrapper(func: Callable[..., None]) -> Callable[..., None]:
     def inner_wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except (MinOutOfRangeException, FileNotFoundError) as e:
+        except (MinOutOfRangeException, NoPyModuleFound, FileNotFoundError) as e:
             print(e)
 
     return inner_wrapper
+
+
+class MetaSingletonWrapper(ABC, Singleton):
+    """
+    A Metaclass with the only purpose of comply with Python
+    inheritance and metaclass building process.
+    This metaclass is essential so that the multiple inheritance chain and
+    interface looking up mechanism properly works
+    """
+    pass
 
 
 class UpdatePyCronValues:
@@ -58,61 +51,7 @@ class UpdatePyCronValues:
         self.ready_to_update = True if len(self.old_pycron_values) != 0 else False
 
 
-class IPyCronManager(ABC, metaclass=ABCMeta):
-    def __init__(self, pycron_builder: IPyCronEntry):
-        """
-        Manages the insertion and updating of the python script into cron
-        """
-        check_pkg_existence()
-        super(IPyCronManager, self).__init__()
-        self.successfully_command = False
-        self.pycron_builder = pycron_builder
-        self._script: Optional[str, List[str]] = None
-        self._interval: Optional[str] = None
-        self.event = threading.Event()
-
-    @property
-    def interval(self) -> str:
-        return self._interval
-
-    @interval.setter
-    def interval(self, value: str) -> None:
-        self._interval = value
-
-    @property
-    def script(self) -> str:
-        return self._script
-
-    @overload
-    def set_script(self, script: str) -> None:
-        raise NotImplementedError
-
-    @overload
-    def set_script(self, script: List[str]) -> None:
-        raise NotImplementedError
-
-    def set_script(self, script) -> None:
-        self._script = script
-
-    @abstractmethod
-    def init_cron(self) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def update_cron(self) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def insert_new_cron(self) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    def remove_cron_entry(self) -> None:
-        raise NotImplementedError
-
-
-@_singleton
-class ManagePyCronScript(IPyCronManager, UpdatePyCronValues):
+class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingletonWrapper):
     def __init__(self, pycron_builder: IPyCronEntry):
         super(ManagePyCronScript, self).__init__(pycron_builder)
 
@@ -195,8 +134,11 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues):
                 print("The cron file is empty. Nothing to be deleted")
 
 
-@_singleton
-class ManagePyModuleCronScript(ManagePyCronScript.__wrapped__):
+class ManagePyModuleCronScript(ManagePyCronScript):
+    @_error_wrapper
     def set_script(self, script: List[str]) -> None:
-        py_path, py_module = script
-        super().set_script(f"cd {py_path} && {self.pycron_builder.py_interpreter} -m {py_module}")
+        try:
+            py_path, py_module = script
+            super().set_script(f"cd {py_path} && {self.pycron_builder.py_interpreter} -m {py_module}")
+        except ValueError:
+            raise NoPyModuleFound
