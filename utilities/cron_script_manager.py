@@ -1,7 +1,7 @@
 import io
 from typing import TypeVar, Callable
 
-from python_crontab.icron_entry import ICronEntry
+from python_crontab.interfaces.icron_entry import ICronEntry
 from utilities import run_bash_cmd
 
 Self = TypeVar("Self", bound="CronScriptManager")
