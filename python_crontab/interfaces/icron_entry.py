@@ -1,17 +1,15 @@
 import threading
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from typing import NoReturn, Optional, List, overload
 
 from utilities import time_constraints, check_source_existence, check_pkg_existence
 
 
-class ICronEntry:
+class ICronEntry(ABC):
 
     def __init__(self):
         """
         Interface for setting a generic script entry through crontab command
-        @warning This interface must not implement the ABC helper class for declaring interfaces.
-        This restriction is important due features of metaclass that compound the inheritance chain
         """
         self._script = ""
         self._interval = ""
@@ -73,21 +71,19 @@ class IPyCronManager:
         super(IPyCronManager, self).__init__()
         self.successfully_command = False
         self.pycron_builder = pycron_builder
-        self._script: Optional[str, List[str]] = None
-        self._interval: Optional[str] = None
         self.event = threading.Event()
 
     @property
     def interval(self) -> str:
-        return self._interval
+        return self.pycron_builder.interval
 
     @interval.setter
     def interval(self, value: str) -> None:
-        self._interval = value
+        self.pycron_builder.interval = value
 
     @property
     def script(self) -> str:
-        return self._script
+        return self.pycron_builder.script
 
     @overload
     def set_script(self, script: str) -> None:
@@ -98,7 +94,7 @@ class IPyCronManager:
         raise NotImplementedError
 
     def set_script(self, script) -> None:
-        self._script = script
+        self.pycron_builder.script = script
 
     @abstractmethod
     def init_cron(self) -> None:
