@@ -61,8 +61,8 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
         :param interval: the interval to update
         :param script: the python script to update
         """
-        self.pycron_builder.interval = interval
-        self.pycron_builder.script = script
+        self.interval = interval
+        self.set_script(script)
 
     def _pycron_update_builder(self) -> Tuple[str, str]:
         """
