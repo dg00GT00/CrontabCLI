@@ -1,6 +1,6 @@
 from argparse import Action, ArgumentParser, Namespace
 from threading import Thread, Lock
-from typing import Any, Sequence, Text, Tuple, Optional, List, NamedTuple
+from typing import Any, Sequence, Text, Optional, List, NamedTuple
 
 from python_crontab.build_py_cron import BuildPyCronScript, BuildPyModuleCronScript
 from python_crontab.manage_pycron import ManagePyCronScript, ManagePyModuleCronScript
@@ -38,7 +38,6 @@ class BindValues(Action):
 
     def __init__(self, option_strings: Sequence[Text], dest: Text, **kwargs):
         super().__init__(option_strings, dest, **kwargs)
-        self.module = False
         self.cron_manager: Optional[ManagePyCronScript] = None
 
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any,
@@ -46,7 +45,7 @@ class BindValues(Action):
         setattr(namespace, self.dest, values)
 
         with global_lock:
-            if self.module:
+            if getattr(namespace, str(PyCron.MODULE)):
                 self.cron_manager = ManagePyModuleCronScript(BuildPyModuleCronScript())
             else:
                 self.cron_manager = ManagePyCronScript(BuildPyCronScript())
@@ -61,13 +60,13 @@ class CallMainParserFuncs(BindValues):
     Responsible for executing the actions for managing the crontab entries
     """
 
-    def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Tuple[str, str],
+    def __call__(self, parser: ArgumentParser, namespace: Namespace, values: List[str],
                  option_string=None) -> None:
         BindValues.__call__(self, parser, namespace, values, option_string)
         self.cron_manager.event.wait()
 
         self.cron_manager.interval = values[0]
-        self.cron_manager.set_script(values[1])
+        self.cron_manager.set_script(values[1:])
 
         if getattr(namespace, str(PyCron.INIT)) is not None:
             self.cron_manager.init_cron()
@@ -120,7 +119,7 @@ class MainMediatorFuncs(CallInitFuncs, CallMainParserFuncs):
                    args=(self, parser, namespace, values, option_string)).start()
 
 
-class SubMediatorFuncs(CallInitFuncs, CallSubParserFuncs):
+class UpdateMediatorFuncs(CallInitFuncs, CallSubParserFuncs):
     """
     Manages the action execution order when parsing arguments of the sub parser
     """

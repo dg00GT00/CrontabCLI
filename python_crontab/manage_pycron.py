@@ -5,7 +5,7 @@ from typing import List, Tuple, Callable
 from environment import USER
 from exceptions import MinOutOfRangeException, NoPyModuleFound
 from python_crontab.interfaces.icron_entry import IPyCronEntry, IPyCronManager
-from utilities import generate_new_crontab
+from utilities import generate_new_crontab, check_source_existence
 from utilities.cron_script_manager import CronScriptManager
 from utilities.singleton import Singleton
 
@@ -55,36 +55,38 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
     def __init__(self, pycron_builder: IPyCronEntry):
         super(ManagePyCronScript, self).__init__(pycron_builder)
 
-    def _update_py_specs(self, interval: str, script: str) -> None:
+    @_error_wrapper
+    def update_py_specs(self, interval: str, script: str) -> None:
         """
         Update the values of interval and python script in the python crontab builder
         :param interval: the interval to update
         :param script: the python script to update
         """
         self.interval = interval
-        self.set_script(script)
+        check_source_existence(script)
+        self.set_script([script])
 
     def _pycron_update_builder(self) -> Tuple[str, str]:
         """
         Builds the old and new python script formatted to cron entry
         :return: a tuple with the formatted python scripts
         """
-        self._update_py_specs(*self.old_pycron_values)
+        self.update_py_specs(*self.old_pycron_values)
         old_pycron = self.pycron_builder.build_cron_script()
-        self._update_py_specs(*self.new_pycron_values)
+        self.update_py_specs(*self.new_pycron_values)
         new_pycron = self.pycron_builder.build_cron_script()
         return old_pycron, new_pycron
 
     @_error_wrapper
     def init_cron(self) -> None:
-        self._update_py_specs(self.interval, self.script)
+        self.update_py_specs(self.interval, self.script)
         with CronScriptManager(self.pycron_builder) as c:
             if not c.some_entry_exists:
                 print(f"Generating a new cron for {USER} user...")
                 generate_new_crontab(c.crontab_gen.build_cron_script())
                 self.successfully_command = True
             else:
-                print(f"{USER} user already has a cron entry. Call the 'update' command to alter existent entries")
+                print(f"{USER} user already has a cron entry. Use '--update' switch to alter existent entries")
 
     @_error_wrapper
     def update_cron(self) -> None:
@@ -104,7 +106,7 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
 
     @_error_wrapper
     def insert_new_cron(self) -> None:
-        self._update_py_specs(self.interval, self.script)
+        self.update_py_specs(self.interval, self.script)
         with CronScriptManager(self.pycron_builder) as c:
             if c.some_entry_exists:
                 print("Inserting a new cron entry...")
@@ -120,7 +122,7 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
 
     @_error_wrapper
     def remove_cron_entry(self) -> None:
-        self._update_py_specs(self.interval, self.script)
+        self.update_py_specs(self.interval, self.script)
         with CronScriptManager(self.pycron_builder) as c:
             if c.some_entry_exists:
                 print("Removing the cron entry...")
@@ -135,10 +137,15 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
 
 
 class ManagePyModuleCronScript(ManagePyCronScript):
+    def update_py_specs(self, interval: str, script: str) -> None:
+        self.interval = interval
+        super().set_script([script])
+
     @_error_wrapper
     def set_script(self, script: List[str]) -> None:
         try:
             py_path, py_module = script
-            super().set_script(f"cd {py_path} && {self.pycron_builder.py_interpreter} -m {py_module}")
+            check_source_existence(py_path)
+            super().set_script([f"cd {py_path} && {self.pycron_builder.py_interpreter} -m {py_module}"])
         except ValueError:
             raise NoPyModuleFound

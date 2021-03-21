@@ -22,4 +22,4 @@ class NoPyModuleFound(Exception):
     """
 
     def __str__(self) -> str:
-        return "When --module, -m switch specified, the python module path and python module name should be determined"
+        return "When --module switch specified, the python module path and python module name should be determined"

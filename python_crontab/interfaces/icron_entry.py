@@ -1,8 +1,8 @@
 import threading
 from abc import abstractmethod, ABC
-from typing import NoReturn, Optional, List, overload
+from typing import NoReturn, Optional, List
 
-from utilities import time_constraints, check_source_existence, check_pkg_existence
+from utilities import time_constraints, check_pkg_existence
 
 
 class ICronEntry(ABC):
@@ -28,8 +28,7 @@ class ICronEntry(ABC):
         return self._script
 
     @script.setter
-    def script(self, value: str) -> NoReturn:
-        check_source_existence(value)
+    def script(self, value: str) -> None:
         self._script = value
 
     @abstractmethod
@@ -85,16 +84,8 @@ class IPyCronManager:
     def script(self) -> str:
         return self.pycron_builder.script
 
-    @overload
-    def set_script(self, script: str) -> None:
-        raise NotImplementedError
-
-    @overload
     def set_script(self, script: List[str]) -> None:
-        raise NotImplementedError
-
-    def set_script(self, script) -> None:
-        self.pycron_builder.script = script
+        self.pycron_builder.script = script[0]
 
     @abstractmethod
     def init_cron(self) -> None:
