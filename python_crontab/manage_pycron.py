@@ -63,7 +63,6 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
         :param script: the python script to update
         """
         self.interval = interval
-        check_source_existence(script)
         self.set_script([script])
 
     def _pycron_update_builder(self) -> Tuple[str, str]:
@@ -137,9 +136,11 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
 
 
 class ManagePyModuleCronScript(ManagePyCronScript):
-    def update_py_specs(self, interval: str, script: str) -> None:
-        self.interval = interval
-        super().set_script([script])
+    def set_old_values(self, py_cron_value: List[str]) -> None:
+        super(ManagePyModuleCronScript, self).set_old_values([py_cron_value[0], " ".join(py_cron_value[1:])])
+
+    def set_new_values(self, py_cron_value: List[str]) -> None:
+        super(ManagePyModuleCronScript, self).set_new_values([py_cron_value[0], " ".join(py_cron_value[1:])])
 
     @_error_wrapper
     def set_script(self, script: List[str]) -> None:
