@@ -1,6 +1,6 @@
 from argparse import Action, ArgumentParser, Namespace
 from threading import Thread, Lock
-from typing import Any, Sequence, Text, Tuple, Optional
+from typing import Any, Sequence, Text, Tuple, Optional, List, NamedTuple
 
 from python_crontab.build_py_cron import BuildPyCronScript, BuildPyModuleCronScript
 from python_crontab.manage_pycron import ManagePyCronScript, ManagePyModuleCronScript
@@ -10,6 +10,27 @@ from utilities import check_attr
 global_lock = Lock()
 
 
+class UpdateValues(NamedTuple):
+    old: List[str]
+    new: List[str]
+
+
+def _parse_update_args(update_args: List[str]) -> UpdateValues:
+    """
+    Rearrange the update list of parameters
+    @param update_args: the list came from update namespace object
+    @return: restructured namedtuple
+    """
+    old_values = ""
+    new_values = ""
+    for update_arg in update_args:
+        if SubPyCron.NEW.build_args() in update_arg:
+            new_values = update_arg.split(SubPyCron.NEW.build_args())[1].split()
+        else:
+            old_values = update_arg.split(SubPyCron.OLD.build_args())[1].split()
+    return UpdateValues(old=old_values, new=new_values)
+
+
 class BindValues(Action):
     """
     Base argument parser class with holds an instance of the manage crontab implementation
@@ -17,13 +38,15 @@ class BindValues(Action):
 
     def __init__(self, option_strings: Sequence[Text], dest: Text, **kwargs):
         super().__init__(option_strings, dest, **kwargs)
+        self.module = False
         self.cron_manager: Optional[ManagePyCronScript] = None
 
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any,
                  option_string=None) -> None:
         setattr(namespace, self.dest, values)
+
         with global_lock:
-            if getattr(namespace, str(PyCron.MODULE)):
+            if self.module:
                 self.cron_manager = ManagePyModuleCronScript(BuildPyModuleCronScript())
             else:
                 self.cron_manager = ManagePyCronScript(BuildPyCronScript())
@@ -42,6 +65,7 @@ class CallMainParserFuncs(BindValues):
                  option_string=None) -> None:
         BindValues.__call__(self, parser, namespace, values, option_string)
         self.cron_manager.event.wait()
+
         self.cron_manager.interval = values[0]
         self.cron_manager.set_script(values[1])
 
@@ -71,10 +95,12 @@ class CallSubParserFuncs(BindValues):
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any, option_string=None) -> None:
         BindValues.__call__(self, parser, namespace, values, option_string)
         self.cron_manager.event.wait()
-        if self.dest == str(SubPyCron.NEW):
-            self.cron_manager.set_new_values(getattr(namespace, "new"))
-        elif self.dest == str(SubPyCron.OLD):
-            self.cron_manager.set_old_values(getattr(namespace, "old"))
+
+        update_values = _parse_update_args(getattr(namespace, str(PyCron.UPDATE)))
+        self.cron_manager.set_script(update_values.new[1])
+
+        self.cron_manager.set_new_values(update_values.new)
+        self.cron_manager.set_old_values(update_values.old)
         self.cron_manager.update_cron()
         self.end_message()
 
@@ -101,10 +127,9 @@ class SubMediatorFuncs(CallInitFuncs, CallSubParserFuncs):
 
     def __call__(self, parser: ArgumentParser, namespace: Namespace, values: Any,
                  option_string=None) -> None:
-        if check_attr(namespace, str(PyCron.PY)):
+        if check_attr(namespace, str(PyCron.PY)) and isinstance(values, str):
             Thread(target=CallInitFuncs.__call__,
                    args=(self, parser, namespace, values, option_string)).start()
         else:
-            if check_attr(namespace, str(SubPyCron.NEW)) or check_attr(namespace, str(SubPyCron.OLD)):
-                Thread(target=CallSubParserFuncs.__call__,
-                       args=(self, parser, namespace, values, option_string)).start()
+            Thread(target=CallSubParserFuncs.__call__,
+                   args=(self, parser, namespace, values, option_string)).start()

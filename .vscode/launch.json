@@ -10,10 +10,9 @@
             "request": "launch",
             "module": "pycron.cli",
             "args": [
-                "--module",
-                "--init",
-                "10",
-                "/home/dggt/PycharmProjects/JobFinders-Python/entrypoint/main.py",
+                "--update",
+                "--old 10 /home/dggt/PycharmProjects/JobFinders-Python/entrypoint/main.py",
+                "--new 20 /home/dggt/PycharmProjects/JobFinders-Python/entrypoint/main.py",
                 "--py",
                 "/home/dggt/.local/share/virtualenvs/JobFinders-Python-urBKBWJx/bin/python"
             ],
