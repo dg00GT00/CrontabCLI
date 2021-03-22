@@ -18,9 +18,9 @@ class BuildPyCronScript(IPyCronEntry):
         super().set_py_interpreter(py_interpreter)
 
     def build_cron_script(self) -> str:
-        return f"*/{self.interval} * * * * {self.py_interpreter} {self.script}".strip()
+        return f"*/{self.interval} * * * * export DISPLAY=':0'; {self.py_interpreter} {self.script} >/dev/null 2>&1".strip()
 
 
 class BuildPyModuleCronScript(BuildPyCronScript):
     def build_cron_script(self) -> str:
-        return f"*/{self.interval} * * * * {self.script}".strip()
+        return f"*/{self.interval} * * * * export DISPLAY=':0'; {self.script} >/dev/null 2>&1".strip()
