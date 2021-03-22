@@ -4,9 +4,29 @@
     "version": "2.0.0",
     "tasks": [
         {
-          "label": "echo",
-          "type": "shell",
-          "command": "echo Hello"
+            "label": "init pycron with module",
+            "type": "shell",
+            "problemMatcher": "$func-python-watch",
+            "command": "python3",
+            "args": [
+                "-m",
+                "pycron.cli",
+                "--module",
+                "--init",
+                "1",
+                "/home/dggt/PycharmProjects/JobFinders-Python",
+                "entrypoint.main",
+                "--py",
+                "/home/dggt/.local/share/virtualenvs/JobFinders-Python-urBKBWJx/bin/python"
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            }
         }
     ]
 }
