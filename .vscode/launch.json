@@ -5,18 +5,33 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Module",
+            "name": "update pycron with module",
             "type": "python",
             "request": "launch",
             "module": "pycron.cli",
             "args": [
                 "--module",
                 "--update",
-                "--old 10 /home/dggt/PycharmProjects/JobFinders-Python entrypoint.main",
+                "--old 30 /home/dggt/PycharmProjects/JobFinders-Python entrypoint.main",
                 "--new 20 /home/dggt/PycharmProjects/JobFinders-Python entrypoint.main",
                 "--py",
                 "/home/dggt/.local/share/virtualenvs/JobFinders-Python-urBKBWJx/bin/python"
-            ],
+            ]
+        },
+        {
+            "name": "init pycron with module",
+            "type": "python",
+            "request": "launch",
+            "module": "pycron.cli",
+            "args": [
+                "--module",
+                "--init",
+                "10",
+                "/home/dggt/PycharmProjects/JobFinders-Python",
+                "entrypoint.main",
+                "--py",
+                "/home/dggt/.local/share/virtualenvs/JobFinders-Python-urBKBWJx/bin/python"
+            ]
         }
     ]
 }

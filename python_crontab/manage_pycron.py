@@ -56,14 +56,14 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
         super(ManagePyCronScript, self).__init__(pycron_builder)
 
     @_error_wrapper
-    def update_py_specs(self, interval: str, script: str) -> None:
+    def update_py_specs(self, interval: str, *script) -> None:
         """
         Update the values of interval and python script in the python crontab builder
         :param interval: the interval to update
         :param script: the python script to update
         """
         self.interval = interval
-        self.set_script([script])
+        self.set_script(*script)
 
     def _pycron_update_builder(self) -> Tuple[str, str]:
         """
@@ -78,7 +78,6 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
 
     @_error_wrapper
     def init_cron(self) -> None:
-        self.update_py_specs(self.interval, self.script)
         with CronScriptManager(self.pycron_builder) as c:
             if not c.some_entry_exists:
                 print(f"Generating a new cron for {USER} user...")
@@ -105,7 +104,6 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
 
     @_error_wrapper
     def insert_new_cron(self) -> None:
-        self.update_py_specs(self.interval, self.script)
         with CronScriptManager(self.pycron_builder) as c:
             if c.some_entry_exists:
                 print("Inserting a new cron entry...")
@@ -121,7 +119,6 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
 
     @_error_wrapper
     def remove_cron_entry(self) -> None:
-        self.update_py_specs(self.interval, self.script)
         with CronScriptManager(self.pycron_builder) as c:
             if c.some_entry_exists:
                 print("Removing the cron entry...")
@@ -136,17 +133,11 @@ class ManagePyCronScript(IPyCronManager, UpdatePyCronValues, metaclass=MetaSingl
 
 
 class ManagePyModuleCronScript(ManagePyCronScript):
-    def set_old_values(self, py_cron_value: List[str]) -> None:
-        super(ManagePyModuleCronScript, self).set_old_values([py_cron_value[0], " ".join(py_cron_value[1:])])
-
-    def set_new_values(self, py_cron_value: List[str]) -> None:
-        super(ManagePyModuleCronScript, self).set_new_values([py_cron_value[0], " ".join(py_cron_value[1:])])
-
     @_error_wrapper
-    def set_script(self, script: List[str]) -> None:
+    def set_script(self, *script) -> None:
         try:
             py_path, py_module = script
             check_source_existence(py_path)
-            super().set_script([f"cd {py_path} && {self.pycron_builder.py_interpreter} -m {py_module}"])
+            super().set_script(f"cd {py_path} && {self.pycron_builder.py_interpreter} -m {py_module}")
         except ValueError:
             raise NoPyModuleFound

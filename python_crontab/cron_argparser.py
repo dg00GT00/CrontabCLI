@@ -66,7 +66,7 @@ class CallMainParserFuncs(BindValues):
         self.cron_manager.event.wait()
 
         self.cron_manager.interval = values[0]
-        self.cron_manager.set_script(values[1:])
+        self.cron_manager.set_script(*values[1:])
 
         if getattr(namespace, str(PyCron.INIT)) is not None:
             self.cron_manager.init_cron()
@@ -96,7 +96,7 @@ class CallSubParserFuncs(BindValues):
         self.cron_manager.event.wait()
 
         update_values = _parse_update_args(getattr(namespace, str(PyCron.UPDATE)))
-        self.cron_manager.set_script(update_values.new[1:])
+        self.cron_manager.set_script(*update_values.new[1:])
 
         self.cron_manager.set_new_values(update_values.new)
         self.cron_manager.set_old_values(update_values.old)

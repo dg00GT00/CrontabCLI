@@ -1,6 +1,6 @@
 import threading
 from abc import abstractmethod, ABC
-from typing import NoReturn, Optional, List
+from typing import NoReturn, Optional
 
 from utilities import time_constraints, check_pkg_existence
 
@@ -84,8 +84,8 @@ class IPyCronManager:
     def script(self) -> str:
         return self.pycron_builder.script
 
-    def set_script(self, script: List[str]) -> None:
-        self.pycron_builder.script = script[0]
+    def set_script(self, script: str) -> None:
+        self.pycron_builder.script = script
 
     @abstractmethod
     def init_cron(self) -> None:
